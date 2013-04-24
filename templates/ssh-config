@@ -1,0 +1,9 @@
+Host <%= target_fqdn %>
+    Hostname <%= target_fqdn %>
+    User <%= target_ssh_user %>
+    IdentityFile ~/.ssh/<%= target_fqdn %>
+    Port <%= target_port %>
+<% if disable_key_fingerprint_check == "true" -%>
+    StrictHostKeyChecking no
+    UserKnownHostsFile=/dev/null
+<% end %>

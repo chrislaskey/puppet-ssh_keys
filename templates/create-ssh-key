@@ -1,0 +1,83 @@
+<%
+# Creates a private and public key on the puppetmaster server if needed. Then
+# returns the private key for placement on the puppet client. The new keys
+# are authorized on the puppetmaster in a separate process.
+#
+# Note: ERB files in puppet run on the puppetmaster as the puppet user,
+# not as root.
+
+def sh (command)
+	%x[ #{command} ]
+	return $? == 0
+end
+
+def error (message)
+	raise Puppet::Error, "\nError creating ssh key for user '#{local_ssh_user}'. #{message}"
+end
+
+def set_variables ()
+	$puppetmaster_target_fqdn_key_dir = "#{puppetmaster_key_dir}/#{target_fqdn}"
+	$private_key = "#{$puppetmaster_target_fqdn_key_dir}/#{target_ssh_user}.#{local_ssh_user}.#{fqdn}"
+	$public_key = "#{$private_key}.pub"
+	$user_hostname_generated = "`id -un`@`hostname`"
+	$user_hostname_replacement = "#{local_ssh_user}\@#{hostname}"
+end
+
+def verify_puppetmaster_environment ()
+	command = "mkdir -p #{puppetmaster_key_dir}"
+	if not sh (command)
+		error "The key path on puppetmaster does not exist and could not be created, '#{puppetmaster_key_dir}'."
+	end
+
+	command = "mkdir -p #{$puppetmaster_target_fqdn_key_dir}"
+	if not sh (command)
+		error "The target machine's fqdn key directory on puppetmaster does not exist and could not be created, '#{$puppetmaster_target_fqdn_key_dir}'."
+	end
+
+	command = "chmod 0700 #{$puppetmaster_target_fqdn_key_dir}"
+	return sh (command)
+end
+
+def has_already_run ()
+	# Note: This is an imperfect check. This ERB template has no access to the
+	# puppet client, only the puppetmaster. The puppet client is set to never
+	# overwrite the key file once it exists. This ERB file is run on puppetmaster on
+	# every update, regardless of the state on the puppet client. This mechanism
+	# checks if the public key still exists on the puppetmaster. If the puppet client
+	# and puppetmaster fall out of sync, remove both files and execute this again.
+	command = "test -f #{$public_key} || test -f #{$public_key}.authorized"
+	return sh (command)
+end
+
+def generate_keys ()
+	command = "ssh-keygen -f '#{$private_key}' -N ''"
+	return sh (command)
+end
+
+def change_public_key_user_and_hostname ()
+	command = "sed -i'' -e \"s/#{$user_hostname_generated}/#{$user_hostname_replacement}/\" #{$public_key}"
+	return sh (command)
+end
+
+def return_private_key_content ()
+	return File.read($private_key)
+end
+
+def remove_private_key ()
+	command = "rm #{$private_key}"
+	return sh (command)
+end
+
+# Execution
+
+set_variables
+verify_puppetmaster_environment
+if has_already_run
+	return
+end
+
+generate_keys
+change_public_key_user_and_hostname
+private_key_content = return_private_key_content
+remove_private_key
+%><%= private_key_content %>

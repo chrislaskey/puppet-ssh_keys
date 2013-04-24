@@ -1,0 +1,173 @@
+#!/usr/bin/env bash
+
+# Get each .public file. E.g.:
+# ls -a | grep --color=never \.public | xargs -n 1 process_key 
+#
+# Process each file by breaking it down. <name>::<hostname>
+#
+# Verify exists:
+#	user home dir
+#	user .ssh dir
+#	user authorized_keys file
+#	verify permissions!
+#
+# Add public key to authorized_keys. E.g.,
+# cat $public_file >> $authorized_keys
+#
+# Rename public file? Print notice of success.
+
+source_dir="<%= target_fqdn_key_dir %>"
+public_key=""
+user=""
+user_home_dir=""
+user_ssh_dir=""
+user_authorized_keys_file=""
+
+# option_example_one=
+# option_example_two=
+# parse_options () {
+# 	while getopts "o:t:" opt; do
+# 		case $opt in
+# 			o)
+# 				option_example_one=$OPTARG
+# 				;;
+# 			t)
+# 				option_example_two=$OPTARG
+# 				;;
+# 		esac
+# 	done
+# } ; parse_options $@
+
+set -o nounset
+set -o errtrace
+set -o errexit
+set -o pipefail
+
+log () {
+	printf "$*\n"
+}
+
+error () {
+	log "ERROR: " "Could not authorize ssh keys. " "$*\n"
+	exit 1
+}
+
+help () {
+	echo "Usage is './${this_file} <project-name>'"
+}
+
+# Application functions
+
+before_exit () {
+	# Works like a finally statement
+	# Code that must always be run goes here
+	return
+} ; trap before_exit EXIT
+
+_verify_root_privileges () {
+	if [[ $EUID -ne 0 ]]; then
+		fail "Requires root privileges."
+	fi
+}
+
+_verify_source_dir () {
+	if [[ ! -d "$source_dir" ]]; then
+		fail "Source directory does not exist: '${source_dir}'."
+	fi
+}
+
+verify_environment () {
+	_verify_root_privileges
+	_verify_source_dir
+}
+
+# Project file functions
+
+set_variables () {
+	public_key="$1"
+	user=`echo $public_key | awk -F. '{print $1}'`
+	user_home_dir="/home/${user}"
+  	user_ssh_dir="${user_home_dir}/.ssh"
+  	user_authorized_keys_file="${user_home_dir}/.ssh/authorized_keys"
+}
+
+_verify_user () {
+	if ! id "${user}"; then
+		fail "User does not exist: '${user}'."
+	fi
+}
+
+_verify_home_directory () {
+	if [[ ! -d "${user_home_dir}" ]]; then
+		fail "User home directory does not exist: '${user_home_dir}'."
+	fi
+}
+
+_verify_ssh_directory () {
+	if ! mkdir -p "$user_ssh_dir"; then
+		fail "User home .ssh directory does not exist and can not be created: 'mkdir -p ${user_ssh_dir}'."
+	fi
+
+	if ! chmod 0700 "$user_ssh_dir"; then
+		fail "User home .ssh directory permissions could not be confirmed: 'chmod 0700 ${user_ssh_dir}'."
+	fi
+
+	if ! chown -R "$user" "$user_ssh_dir"; then
+		fail "User home .ssh directory ownership could not be confirmed: 'chown -R ${user} ${user_ssh_dir}'."
+	fi
+}
+
+_verify_authorized_keys_file () {
+	if ! touch "$user_authorized_keys_file"; then
+		fail "User authorized_keys file does not exist and can not be created: 'touch ${user_authorized_keys_file}'."
+	fi
+
+	if ! chmod 0600 "$user_authorized_keys_file"; then
+		fail "User authorized_keys file permissions could not be confirmed: 'chmod 0600 ${user_authorized_keys_file}'."
+	fi
+
+	if ! chown -R "$user" "$user_authorized_keys_file"; then
+		fail "User home .ssh directory ownership could not be confirmed: 'chown -R ${user} ${user_authorized_keys_file}'."
+	fi
+}
+
+verify_structure () {
+	_verify_user
+	_verify_home_directory
+	_verify_ssh_directory
+	_verify_authorized_keys_file
+}
+
+add_to_authorized_keys_file () {
+	if grep "`cat ${public_key}`" "${user_authorized_keys_file}"; then
+		fail "NOTICE: key already exists in authorized key file. Skipping file and marking as authorized: 'grep \`cat public_key\` ${user_authorized_keys_file}'."
+	fi
+
+	if ! cat ${public_key} >> ${user_authorized_keys_file}; then
+		fail "Could not add public key file to authorized_keys file: '${public_key}' '${user_authorized_keys_file}'"
+	fi
+}
+
+cleanup_files () {
+	mv "$public_key" "${public_key}.authorized"
+}
+
+process_key () {
+	key="$1"
+	set_variables "$key"
+	verify_structure
+	add_to_authorized_keys_file
+	cleanup_files
+}
+
+find_key_files_to_process () {
+  	cd "$source_dir" 
+	for i in `ls -a | grep --color=never \.pub$`; do
+		process_key "$i"
+	done
+}
+
+# Application execution
+
+verify_environment
+find_key_files_to_process

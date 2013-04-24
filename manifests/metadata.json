@@ -1,0 +1,7 @@
+name 'ssh_keys'
+version '1.0.0'
+author 'Chris Laskey'
+summary 'A custom puppet module for automating SSH key creation and deployment between source and target machines.'
+description 'A custom puppet module for automating SSH key creation and deployment between source and target machines.'
+license 'MIT License (http://opensource.org/licenses/MIT)'
+project_page 'http://github.com/chrislaskey'
