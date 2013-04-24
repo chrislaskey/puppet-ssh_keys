@@ -39,8 +39,7 @@ entry is:
       	path /data/ssh-keys/%H
       	allow *
 
-This stores the public keys in the default location,
-```/data/ssh-keys/<target-fqdn>```.
+This stores the public keys in the default location, ```/data/ssh-keys/<target-fqdn>```.
 
 If using a path other than ```/data/ssh-keys```, make sure to pass in the new
 location as a parameter in the node definitions:
