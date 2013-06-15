@@ -3,11 +3,12 @@ define ssh_keys::create (
 	$target_port = "22",
 	$target_ssh_user = $title,
 	$local_ssh_user = $title,
-	$disable_key_fingerprint_check = "false", # ("false"|"true")
+	$general_key_dir = "/data/ssh-keys",
+	
 	# This option disables the key fingerprint check. This is a security hole
 	# and should only be used if you know what you are doing. The main use
 	# case is headless scripts using unmonitored users.
-	$general_key_dir = "/data/ssh-keys",
+	$disable_key_fingerprint_check = "false", # ("false"|"true")
 ){
 
 	# Class variables

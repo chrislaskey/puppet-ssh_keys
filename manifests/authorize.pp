@@ -24,7 +24,7 @@ class ssh_keys::authorize(
 		# See /etc/puppet/fileserver.conf 
 		# and https://github.com/puppetlabs/puppet-docs/blob/master/source/guides/file_serving.markdown  
 		# for source property. This example maps to $target_fqdn_key_dir value.
-		source => "puppet:///ssh-keys",
+		source => "puppet:///ssh-keys", 
 		owner => "puppet",
 		group => "puppet",
 		mode => "0600",

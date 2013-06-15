@@ -66,13 +66,13 @@ before_exit () {
 
 _verify_root_privileges () {
 	if [[ $EUID -ne 0 ]]; then
-		fail "Requires root privileges."
+		error "Requires root privileges."
 	fi
 }
 
 _verify_source_dir () {
 	if [[ ! -d "$source_dir" ]]; then
-		fail "Source directory does not exist: '${source_dir}'."
+		error "Source directory does not exist: '${source_dir}'."
 	fi
 }
 
@@ -93,41 +93,41 @@ set_variables () {
 
 _verify_user () {
 	if ! id "${user}"; then
-		fail "User does not exist: '${user}'."
+		error "User does not exist: '${user}'."
 	fi
 }
 
 _verify_home_directory () {
 	if [[ ! -d "${user_home_dir}" ]]; then
-		fail "User home directory does not exist: '${user_home_dir}'."
+		error "User home directory does not exist: '${user_home_dir}'."
 	fi
 }
 
 _verify_ssh_directory () {
 	if ! mkdir -p "$user_ssh_dir"; then
-		fail "User home .ssh directory does not exist and can not be created: 'mkdir -p ${user_ssh_dir}'."
+		error "User home .ssh directory does not exist and can not be created: 'mkdir -p ${user_ssh_dir}'."
 	fi
 
 	if ! chmod 0700 "$user_ssh_dir"; then
-		fail "User home .ssh directory permissions could not be confirmed: 'chmod 0700 ${user_ssh_dir}'."
+		error "User home .ssh directory permissions could not be confirmed: 'chmod 0700 ${user_ssh_dir}'."
 	fi
 
 	if ! chown -R "$user" "$user_ssh_dir"; then
-		fail "User home .ssh directory ownership could not be confirmed: 'chown -R ${user} ${user_ssh_dir}'."
+		error "User home .ssh directory ownership could not be confirmed: 'chown -R ${user} ${user_ssh_dir}'."
 	fi
 }
 
 _verify_authorized_keys_file () {
 	if ! touch "$user_authorized_keys_file"; then
-		fail "User authorized_keys file does not exist and can not be created: 'touch ${user_authorized_keys_file}'."
+		error "User authorized_keys file does not exist and can not be created: 'touch ${user_authorized_keys_file}'."
 	fi
 
 	if ! chmod 0600 "$user_authorized_keys_file"; then
-		fail "User authorized_keys file permissions could not be confirmed: 'chmod 0600 ${user_authorized_keys_file}'."
+		error "User authorized_keys file permissions could not be confirmed: 'chmod 0600 ${user_authorized_keys_file}'."
 	fi
 
 	if ! chown -R "$user" "$user_authorized_keys_file"; then
-		fail "User home .ssh directory ownership could not be confirmed: 'chown -R ${user} ${user_authorized_keys_file}'."
+		error "User home .ssh directory ownership could not be confirmed: 'chown -R ${user} ${user_authorized_keys_file}'."
 	fi
 }
 
@@ -140,11 +140,12 @@ verify_structure () {
 
 add_to_authorized_keys_file () {
 	if grep "`cat ${public_key}`" "${user_authorized_keys_file}"; then
-		fail "NOTICE: key already exists in authorized key file. Skipping file and marking as authorized: 'grep \`cat public_key\` ${user_authorized_keys_file}'."
+		log "NOTICE: key already exists in authorized key file. Skipping file and marking as authorized: 'grep \`cat public_key\` ${user_authorized_keys_file}'."
+		return
 	fi
 
 	if ! cat ${public_key} >> ${user_authorized_keys_file}; then
-		fail "Could not add public key file to authorized_keys file: '${public_key}' '${user_authorized_keys_file}'"
+		error "Could not add public key file to authorized_keys file: '${public_key}' '${user_authorized_keys_file}'"
 	fi
 }
 
