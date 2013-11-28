@@ -1,23 +1,25 @@
 class ssh_keys::authorize(
-	$general_key_dir = "/data/ssh-keys",
+	$puppet_key_dir = "/etc/puppet/ssh-keys",
 ){
+
+	# Include main class
+	# ==========================================================================
+
+	include ssh_keys
 
 	# Class variables
 	# ==========================================================================
 
-	$target_fqdn_key_dir = "${general_key_dir}/${fqdn}"
+	$target_fqdn_key_dir = "${puppet_key_dir}/${fqdn}"
 
 	# Send keys
 	# ==========================================================================
 
-	file { "${general_key_dir}":
+	file { "${puppet_key_dir}":
 		ensure => "directory",
 		owner => "puppet",
 		group => "puppet",
 		mode => "0700",
-		require => [
-			File["/data/puppet"],
-		]
 	}
 
 	file { "${target_fqdn_key_dir}":
@@ -31,14 +33,14 @@ class ssh_keys::authorize(
 		recurse => true, # Transfer directory files too
 		purge => true, # Remove client files not found on puppetmaster dir
 		require => [
-			File["${general_key_dir}"],
+			File["${puppet_key_dir}"],
 		],
 	}
 
 	# Authorize keys
 	# ==========================================================================
 
-	file { "${general_key_dir}/authorize-ssh-keys.sh":
+	file { "${puppet_key_dir}/authorize-ssh-keys.sh":
 		ensure => "present",
 		content => template("ssh_keys/authorize-ssh-keys"),
 		owner => "puppet",
@@ -50,13 +52,13 @@ class ssh_keys::authorize(
 	}
 
 	exec { "authorize-ssh-keys": 
-		command => "${general_key_dir}/authorize-ssh-keys.sh",
+		command => "${puppet_key_dir}/authorize-ssh-keys.sh",
 		path => "/bin:/sbin:/usr/bin:/usr/sbin",
 		user => "root",
 		group => "root",
 		logoutput => "on_failure",
 		require => [
-			File["${general_key_dir}/authorize-ssh-keys.sh"],
+			File["${puppet_key_dir}/authorize-ssh-keys.sh"],
 		],
 	}
 

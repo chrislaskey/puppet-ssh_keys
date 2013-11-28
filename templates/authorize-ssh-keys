@@ -23,21 +23,6 @@ user_home_dir=""
 user_ssh_dir=""
 user_authorized_keys_file=""
 
-# option_example_one=
-# option_example_two=
-# parse_options () {
-# 	while getopts "o:t:" opt; do
-# 		case $opt in
-# 			o)
-# 				option_example_one=$OPTARG
-# 				;;
-# 			t)
-# 				option_example_two=$OPTARG
-# 				;;
-# 		esac
-# 	done
-# } ; parse_options $@
-
 set -o nounset
 set -o errtrace
 set -o errexit
@@ -86,9 +71,13 @@ verify_environment () {
 set_variables () {
 	public_key="$1"
 	user=`echo $public_key | awk -F. '{print $1}'`
-	user_home_dir="/home/${user}"
-  	user_ssh_dir="${user_home_dir}/.ssh"
-  	user_authorized_keys_file="${user_home_dir}/.ssh/authorized_keys"
+	if [[ "$user" == "root" ]]; then
+		user_home_dir="/root"
+	else
+		user_home_dir="/home/${user}"
+	fi
+	user_ssh_dir="${user_home_dir}/.ssh"
+	user_authorized_keys_file="${user_home_dir}/.ssh/authorized_keys"
 }
 
 _verify_user () {
@@ -162,7 +151,7 @@ process_key () {
 }
 
 find_key_files_to_process () {
-  	cd "$source_dir" 
+	cd "$source_dir" 
 	for i in `ls -a | grep --color=never \.pub$`; do
 		process_key "$i"
 	done

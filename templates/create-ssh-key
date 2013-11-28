@@ -12,15 +12,15 @@ def sh (command)
 end
 
 def error (message)
-	raise Puppet::Error, "\nError creating ssh key for user '#{local_ssh_user}'. #{message}"
+	raise Puppet::Error, "\nError creating ssh key for user '#{local_user}'. #{message}"
 end
 
 def set_variables ()
 	$puppetmaster_target_fqdn_key_dir = "#{puppetmaster_key_dir}/#{target_fqdn}"
-	$private_key = "#{$puppetmaster_target_fqdn_key_dir}/#{target_ssh_user}.#{local_ssh_user}.#{fqdn}"
+	$private_key = "#{$puppetmaster_target_fqdn_key_dir}/#{target_user}.#{local_user}.#{fqdn}"
 	$public_key = "#{$private_key}.pub"
 	$user_hostname_generated = "`id -un`@`hostname`"
-	$user_hostname_replacement = "#{local_ssh_user}\@#{hostname}"
+	$user_hostname_replacement = "#{local_user}\@#{hostname}"
 end
 
 def verify_puppetmaster_environment ()
