@@ -20,6 +20,7 @@ define ssh_keys::connect (
 	$local_user = $pieces["local_user"]
 	$target_user = $pieces["remote_user"]
 	$target_fqdn = $pieces["remote_fqdn"]
+	$target_user_and_fqdn = "${target_user}@${target_fqdn}"
 
 	# Set local home directory
 
@@ -43,7 +44,7 @@ define ssh_keys::connect (
 		}
 	}
 
-	file { "${key_dir}/${target_fqdn}":
+	file { "${key_dir}/${target_user_and_fqdn}":
 		ensure => "present",
 		content => template("ssh_keys/create-ssh-key"),
 		owner => "${local_user}",

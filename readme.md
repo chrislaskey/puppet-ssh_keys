@@ -74,29 +74,28 @@ by the machine's fully qualified domain name (FQDN). The target machine then
 processes the public keys and adds each to the target users
 ``/home/<user>/.ssh/authorized_keys` file. This process is idempotent.
 
-Security and Regenerating Keys
-------------------------------
-
-For security private keys are never stored on the Puppet Master or anywhere
-except the source machine.
+Regenerating Keys
+-----------------
 
 Once a key pair is created, subsequent catalog runs can not confirm the
 contents of the private key.
 
-If the source machine is rebuilt and the SSH keys need to be regenerated,
-**manually remove all of the source machines' public key files in the
-`puppet_key_dir` (default location is `/etc/puppet/ssh-keys`) on the Puppet
-Master**. 
+Though more secure, a side effect of this is the Puppet Master can not
+determine when a key pair has changed.
+
+To regenerate a key pair manually remove the private key file on the source
+machine. Then run Puppet on the source machine. Finally, run Puppet on the
+target machine.
 
 Troubleshooting
 ---------------
 
-If the following error pops up when execting a `ssh_keys::connect` definition:
+If the following error pops up when executing a `ssh_keys::connect` definition:
 
   err: Could not retrieve catalog from remote server: wrong header line format
 
-Check the permissions on the Puppet Master for the `puppet_key_dir` (default
-location is `/etc/puppet/ssh-keys`). In other words:
+Check the permissions on the Puppet Master for the `ssh_keys::params::puppet_key_dir` (default
+location is `/etc/puppet/ssh-keys`). It may require manually creating the key directory:
 
   mkdir -p /etc/puppet/ssh-keys
   chown -R puppet:puppet /etc/puppet/ssh-keys
