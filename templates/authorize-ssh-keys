@@ -138,16 +138,11 @@ add_to_authorized_keys_file () {
 	fi
 }
 
-cleanup_files () {
-	mv "$public_key" "${public_key}.authorized"
-}
-
 process_key () {
 	key="$1"
 	set_variables "$key"
 	verify_structure
 	add_to_authorized_keys_file
-	cleanup_files
 }
 
 find_key_files_to_process () {
