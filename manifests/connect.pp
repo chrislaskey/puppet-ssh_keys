@@ -1,33 +1,41 @@
 define ssh_keys::connect (
-	$local_user,
-	$local_dir = "",
-	$target_fqdn = $title,
-	$target_port = "22",
-	$target_user = $local_user,
-	$puppetmaster_key_dir = "/etc/puppet/ssh-keys",
-	# This option disables the host key fingerprint check. This is a security
-	# hole and should only be used if you know what you are doing. 
-	$disable_key_fingerprint_check = "false", # ("false"|"true")
+	# Expected $title value is "local_user:remote_user@remote_fqdn"
+	$ssh_key_directory = "", # Local directory to store the private key. Defaults to home directory of the user, /home/user/.ssh or /root/.ssh.
 ){
 
-	# Include main class
+	# Setup environment
 	# ==========================================================================
 
 	include ssh_keys
+	include ssh_keys::params
 
-	if ! empty($local_dir) {
-		$parsed_local_dir = $local_dir
+	# Set local variables
+
+	$puppetmaster_key_dir = $ssh_keys::params::puppetmaster_key_dir
+
+	$pieces = parse_sshkey_connection($title) # Parse $title into local_user:remote_user@remote_fqdn
+	if empty($pieces) {
+		fail("Invalid ssh_keys::connect definition. The \$title attribute must be in the form of local_user:remote_user@remote_fqdn. Received attribute \"${title}\".")
+	}
+	$local_user = $pieces["local_user"]
+	$target_user = $pieces["remote_user"]
+	$target_fqdn = $pieces["remote_fqdn"]
+
+	# Set local home directory
+
+	if ! empty($ssh_key_directory) {
+		$key_dir = $ssh_key_directory
 	} elsif $local_user == "root" {
-		$parsed_local_dir = "/root"
+		$key_dir = "/root/.ssh"
 	} else {
-		$parsed_local_dir = "/home/${local_user}"
+		$key_dir = "/home/${local_user}/.ssh"
 	}
 
 	# Create SSH keys
 	# ==========================================================================
 
-	if ! defined(File["${parsed_local_dir}/.ssh"]) {
-		file { "${parsed_local_dir}/.ssh":
+	if ! defined(File["${key_dir}"]) {
+		file { "${key_dir}":
 			ensure => "directory",
 			owner => "${local_user}",
 			group => "${local_user}",
@@ -35,30 +43,16 @@ define ssh_keys::connect (
 		}
 	}
 
-	file { "${parsed_local_dir}/.ssh/${target_fqdn}":
+	file { "${key_dir}/${target_fqdn}":
 		ensure => "present",
 		content => template("ssh_keys/create-ssh-key"),
 		owner => "${local_user}",
 		group => "${local_user}",
 		mode => "0600",
 		require => [
-			File["${parsed_local_dir}/.ssh"],
+			File["${key_dir}"],
 		],
 		replace => false, # Do not overwrite content
 	}
-
-	# TODO: Fix this, must be partial
-	# if ! defined(File["${parsed_local_dir}/.ssh/config"]) {
-	#	file { "${parsed_local_dir}/.ssh/config":
-	#		ensure => "present",
-	#		content => template("ssh_keys/ssh-config"),
-	#		owner => "${local_user}",
-	#		group => "${local_user}",
-	#		mode => "0600",
-	#		require => [
-	#			File["${parsed_local_dir}/.ssh/${target_fqdn}"],
-	#		],
-	#	}
-	# }
 
 }
