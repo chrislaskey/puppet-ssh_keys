@@ -74,31 +74,49 @@ by the machine's fully qualified domain name (FQDN). The target machine then
 processes the public keys and adds each to the target users
 ``/home/<user>/.ssh/authorized_keys` file. This process is idempotent.
 
-Regenerating Keys
------------------
+Security and Regenerating Keys
+------------------------------
+
+For security private keys are never stored on the Puppet Master or anywhere
+except the source machine.
 
 Once a key pair is created, subsequent catalog runs can not confirm the
 contents of the private key.
 
-Though more secure, a side effect of this is the Puppet Master can not
-determine when a key pair has changed.
+Due to the way Puppet executes `File` blocks, both the private and public
+key must be removed before a new pair can be regenerated.
 
-To regenerate a key pair manually remove the private key file on the source
-machine. Then run Puppet on the source machine. Finally, run Puppet on the
-target machine.
+First remove the public key from the **Puppet Master**. The key will be in
+the `ssh_keys::params::puppet_key_dir` location. The default location is
+`/etc/puppet/ssh-keys`. The public key will be inside the target machines
+fqdn directory.
+
+Second, remove the private key from the local machine.
+
+The next time puppet runs on the local machine a new keypair will be 
+generated. Remember to run puppet on the target machine before trying
+to connect using the new key pair.
 
 Troubleshooting
 ---------------
 
-If the following error pops up when executing a `ssh_keys::connect` definition:
+#### Wrong Header Line Format
+
+If the following error pops up when execting a `ssh_keys::connect` definition:
 
   err: Could not retrieve catalog from remote server: wrong header line format
 
-Check the permissions on the Puppet Master for the `ssh_keys::params::puppet_key_dir` (default
-location is `/etc/puppet/ssh-keys`). It may require manually creating the key directory:
+Make sure the `ssh_keys::params::puppet_key_dir` exists and is owned by the
+puppet user:
 
   mkdir -p /etc/puppet/ssh-keys
   chown -R puppet:puppet /etc/puppet/ssh-keys
+
+#### Zero Size Private Key
+
+If the private key exists by is empty, then an error occurred while
+regenerating private key. See the section `Security and Regenerating Keys` for
+directions on how to regenerate the key pair.
 
 License
 ================================================================================
