@@ -1,16 +1,17 @@
-class ssh_keys::authorize(
-	$puppet_key_dir = "/etc/puppet/ssh-keys",
-){
+class ssh_keys::authorize () {
 
 	# Include main class
 	# ==========================================================================
 
 	include ssh_keys
+	include ssh_keys::params
 
 	# Class variables
 	# ==========================================================================
 
-	$target_fqdn_key_dir = "${puppet_key_dir}/${fqdn}"
+	$puppet_key_dir = $ssh_keys::params::puppet_key_dir
+	$public_key_dir = "${puppet_key_dir}/public"
+	$target_fqdn_key_dir = "${public_key_dir}/${fqdn}"
 
 	# Send keys
 	# ==========================================================================
@@ -20,6 +21,16 @@ class ssh_keys::authorize(
 		owner => "puppet",
 		group => "puppet",
 		mode => "0700",
+	}
+
+	file { "${public_key_dir}":
+		ensure => "directory",
+		owner => "puppet",
+		group => "puppet",
+		mode => "0700",
+		require => [
+			File["${puppet_key_dir}"],
+		],
 	}
 
 	file { "${target_fqdn_key_dir}":
@@ -33,7 +44,7 @@ class ssh_keys::authorize(
 		recurse => true, # Transfer directory files too
 		purge => true, # Remove client files not found on puppetmaster dir
 		require => [
-			File["${puppet_key_dir}"],
+			File["${public_key_dir}"],
 		],
 	}
 
