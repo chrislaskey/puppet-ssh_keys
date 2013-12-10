@@ -16,9 +16,14 @@ def error (message)
 end
 
 def set_variables ()
-	$puppetmaster_target_fqdn_key_dir = "#{puppetmaster_key_dir}/#{target_fqdn}"
-	$private_key = "#{$puppetmaster_target_fqdn_key_dir}/#{target_user}.#{local_user}.#{fqdn}"
-	$public_key = "#{$private_key}.pub"
+	$private_key_dir = "#{puppetmaster_key_dir}/private/#{local_fqdn}"
+	$private_key_name = "#{target_user}.#{local_user}.#{fqdn}"
+	$private_key = "#{$private_key_dir}/#{$private_key_name}"
+
+	$public_key_dir = "#{puppetmaster_key_dir}/public/#{target_fqdn}"
+	$public_key_name = "#{$private_key_name}.pub"
+	$public_key = "#{$public_key_dir}/#{$public_key_name}"
+
 	$user_hostname_generated = "`id -un`@`hostname`"
 	$user_hostname_replacement = "#{local_user}\@#{hostname}"
 end
@@ -29,13 +34,21 @@ def verify_puppetmaster_environment ()
 		error "The key path on puppetmaster does not exist and could not be created, '#{puppetmaster_key_dir}'."
 	end
 
-	command = "mkdir -p #{$puppetmaster_target_fqdn_key_dir}"
+	command = "mkdir -p #{$private_key_dir}"
 	if not sh (command)
-		error "The target machine's fqdn key directory on puppetmaster does not exist and could not be created, '#{$puppetmaster_target_fqdn_key_dir}'."
+		error "The private key directory on puppet master does not exist and could not be created, '#{$private_key_dir}'."
 	end
 
-	command = "chmod 0700 #{$puppetmaster_target_fqdn_key_dir}"
-	return sh (command)
+	command = "chmod 0700 #{$private_key_dir}"
+	sh (command)
+
+	command = "mkdir -p #{$public_key_dir}"
+	if not sh (command)
+		error "The public key directory on puppet master does not exist and could not be created, '#{$public_key_dir}'."
+	end
+
+	command = "chmod 0700 #{$public_key_dir}"
+	sh (command)
 end
 
 def has_already_run ()
@@ -45,12 +58,17 @@ def has_already_run ()
 	# every update, regardless of the state on the puppet client. This mechanism
 	# checks if the public key still exists on the puppetmaster. If the puppet client
 	# and puppetmaster fall out of sync, remove both files and execute this again.
-	command = "test -f #{$public_key} || test -f #{$public_key}.authorized"
+	command = "test -f #{$public_key}"
 	return sh (command)
 end
 
 def generate_keys ()
 	command = "ssh-keygen -f '#{$private_key}' -N ''"
+	return sh (command)
+end
+
+def move_public_key ()
+	command = "mv #{$private_key}.pub #{$public_key}"
 	return sh (command)
 end
 
@@ -77,6 +95,7 @@ if has_already_run
 end
 
 generate_keys
+move_public_key
 change_public_key_user_and_hostname
 private_key_content = return_private_key_content
 remove_private_key

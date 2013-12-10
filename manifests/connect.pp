@@ -18,6 +18,7 @@ define ssh_keys::connect (
 		fail("Invalid ssh_keys::connect definition. The \$title attribute must be in the form of local_user:remote_user@remote_fqdn. Received attribute \"${title}\".")
 	}
 	$local_user = $pieces["local_user"]
+	$local_fqdn = $::fqdn
 	$target_user = $pieces["remote_user"]
 	$target_fqdn = $pieces["remote_fqdn"]
 	$target_user_and_fqdn = "${target_user}@${target_fqdn}"
@@ -50,10 +51,10 @@ define ssh_keys::connect (
 		owner => "${local_user}",
 		group => "${local_user}",
 		mode => "0600",
+		replace => false, # Do not overwrite content
 		require => [
 			File["${key_dir}"],
 		],
-		replace => false, # Do not overwrite content
 	}
 
 }
