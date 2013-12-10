@@ -1,0 +1,18 @@
+<%
+# Creates a filebucket entry for the machines fqdn automatically.
+# Without this file it must be manually created.
+#
+# Note: ERB files in puppet run on the puppetmaster as the puppet user,
+# not as root.
+
+def sh (command)
+	%x[ #{command} ]
+	return $? == 0
+end
+
+def create_filebucket ()
+	command = "mkdir -p #{target_fqdn_key_dir}"
+	return sh (command)
+end
+
+%><%= create_filebucket %>

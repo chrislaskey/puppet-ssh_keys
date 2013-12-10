@@ -131,8 +131,10 @@ remove_any_old_keys () {
 	# Parses the user@hostname from the end of the new public key file
 	# then removes any matching lines from the authorized_keys file
 	user_and_hostname=`awk -F' ' '{print $NF}' "${public_key}"`
-
-	if echo "${user_and_hostname}" | grep "@"; then # Contains a specific user@host value
+ 	
+	# Make sure the value is a specific user@hostname. Worth being extra
+	# careful about ensuring no other authorized keys get removed.
+	if echo "${user_and_hostname}" | grep "@"; then
 		sed -i'' "/${user_and_hostname}/d" "${user_authorized_keys_file}"
 	fi
 }

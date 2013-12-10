@@ -10,17 +10,32 @@ class ssh_keys::authorize () {
 	# ==========================================================================
 
 	$puppet_key_dir = $ssh_keys::params::puppet_key_dir
+	$filebucket_key_dir = "${puppet_key_dir}/created-filebucket"
 	$public_key_dir = "${puppet_key_dir}/public"
-	$target_fqdn_key_dir = "${public_key_dir}/${fqdn}"
+	$target_fqdn_key_dir = "${public_key_dir}/${::fqdn}"
 
 	# Send keys
 	# ==========================================================================
 
-	file { "${puppet_key_dir}":
-		ensure => "directory",
+	if ! defined(File["${puppet_key_dir}"]) {
+		file { "${puppet_key_dir}":
+			ensure => "directory",
+			owner => "puppet",
+			group => "puppet",
+			mode => "0700",
+		}
+	}
+
+	# Create filebucket entry for this fqdn if it does not already exist
+	file { "${filebucket_key_dir}":
+		ensure => "present",
+		content => template("ssh_keys/create-ssh-key-filebucket"),
 		owner => "puppet",
 		group => "puppet",
-		mode => "0700",
+		mode => "0644",
+		require => [
+			File["${puppet_key_dir}"],
+		],
 	}
 
 	file { "${public_key_dir}":

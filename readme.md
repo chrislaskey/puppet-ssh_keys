@@ -36,7 +36,7 @@ a `[ssh-keys]` entry to `/etc/puppet/fileserver.conf`. The recommended
 entry is:
 
   	[ssh-keys]
-      	path /etc/puppet/ssh-keys/%H
+      	path /etc/puppet/ssh-keys/public/%H
       	allow *
 
 This stores the public keys in the default location `/etc/puppet/ssh-keys/<target-fqdn>`.
