@@ -1,14 +1,19 @@
 class ssh_keys (
-	$install_ssh_packages = true,
-	$add_known_hosts = true,
+	# $add_authorize_keys = true,
+	# $add_known_hosts = true,
+	# $manage_ssh_service = true,
 ){
 
-	if $install_ssh_packages {
-		include ssh_keys::install_ssh
-	}
+	# if $add_known_hosts {
+	include ssh_keys::known_hosts
+	# }
 
-	if $add_known_hosts {
-		include ssh_keys::known_hosts
-	}
+	# if $add_authorize_keys {
+	# include ssh_keys::authorize_keys
+	# }
+
+	# if $manage_ssh_service {
+	include ssh_keys::manage_ssh
+	# }
 
 }
