@@ -1,0 +1,45 @@
+<%
+# Removes public and private key from the Puppet Master server.
+#
+# Note: ERB files in puppet run on the puppetmaster as the puppet user,
+# not as root.
+
+def sh (command)
+	%x[ #{command} ]
+	return $? == 0
+end
+
+def error (message)
+	raise Puppet::Error, "\nError removing ssh key for user '#{local_user}'. #{message}"
+end
+
+def set_variables ()
+	$private_key_dir = "#{puppetmaster_key_dir}/private/#{local_fqdn}"
+	$private_key_name = "#{target_user}.#{local_user}.#{fqdn}"
+	$private_key = "#{$private_key_dir}/#{$private_key_name}"
+
+	$public_key_dir = "#{puppetmaster_key_dir}/public/#{target_fqdn}"
+	$public_key_name = "#{$private_key_name}.pub"
+	$public_key = "#{$public_key_dir}/#{$public_key_name}"
+end
+
+def remove_private_key ()
+	command = "test -f #{$private_key} && rm #{$private_key}"
+	return sh (command)
+end
+
+def remove_public_key ()
+	command = "test -f #{$public_key} && rm #{$public_key}"
+	return sh (command)
+end
+
+# Execution
+
+set_variables
+remove_private_key
+remove_public_key
+
+timestamp = Time.now()
+last_removed = "Puppet ensured the #{$private_key_name} SSH key is removed on the local client and the Puppet Master on #{timestamp}."
+
+%><%= last_removed %>

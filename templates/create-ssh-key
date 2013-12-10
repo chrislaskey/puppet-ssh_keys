@@ -97,6 +97,7 @@ end
 
 set_variables
 verify_puppetmaster_environment
+
 if ! store_private_key and public_key_exists
 	return
 end
