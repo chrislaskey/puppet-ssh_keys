@@ -24,6 +24,9 @@ def set_variables ()
 	$public_key_name = "#{$private_key_name}.pub"
 	$public_key = "#{$public_key_dir}/#{$public_key_name}"
 
+	$generated_private_key = "#{$private_key}-generated"
+	$generated_public_key = "#{$generated_private_key}.pub"
+
 	$user_hostname_generated = "`id -un`@`hostname`"
 	$user_hostname_replacement = "#{local_user}\@#{hostname}"
 end
@@ -51,29 +54,33 @@ def verify_puppetmaster_environment ()
 	sh (command)
 end
 
-def has_already_run ()
-	# Note: This is an imperfect check. This ERB template has no access to the
-	# puppet client, only the puppetmaster. The puppet client is set to never
-	# overwrite the key file once it exists. This ERB file is run on puppetmaster on
-	# every update, regardless of the state on the puppet client. This mechanism
-	# checks if the public key still exists on the puppetmaster. If the puppet client
-	# and puppetmaster fall out of sync, remove both files and execute this again.
+def public_key_exists ()
 	command = "test -f #{$public_key}"
 	return sh (command)
 end
 
+def private_key_exists ()
+	command = "test -f #{$private_key}"
+	return sh (command)
+end
+
 def generate_keys ()
-	command = "ssh-keygen -f '#{$private_key}' -N ''"
+	command = "ssh-keygen -f '#{$generated_private_key}' -N ''"
 	return sh (command)
 end
 
 def move_public_key ()
-	command = "mv #{$private_key}.pub #{$public_key}"
+	command = "mv #{$generated_public_key} #{$public_key}"
 	return sh (command)
 end
 
 def change_public_key_user_and_hostname ()
 	command = "sed -i'' -e \"s/#{$user_hostname_generated}/#{$user_hostname_replacement}/\" #{$public_key}"
+	return sh (command)
+end
+
+def move_private_key ()
+	command = "mv #{$generated_private_key} #{$private_key}"
 	return sh (command)
 end
 
@@ -88,15 +95,38 @@ end
 
 # Execution
 
+# TODO: Deprecated
+# set_variables
+# verify_puppetmaster_environment
+# if has_already_run
+# 	return
+# end
+
+# generate_keys
+# move_public_key
+# change_public_key_user_and_hostname
+# move_private_key
+# private_key_content = return_private_key_content
+# remove_private_key
+
+
 set_variables
 verify_puppetmaster_environment
-if has_already_run
+if ! store_private_key and public_key_exists
 	return
 end
 
-generate_keys
-move_public_key
-change_public_key_user_and_hostname
+unless private_key_exists
+	generate_keys
+	move_private_key
+	move_public_key
+	change_public_key_user_and_hostname
+end
+
 private_key_content = return_private_key_content
-remove_private_key
+
+unless store_private_key
+	remove_private_key
+end
+
 %><%= private_key_content %>

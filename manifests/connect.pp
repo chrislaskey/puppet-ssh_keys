@@ -1,5 +1,7 @@
 define ssh_keys::connect (
 	# Expected $title value is "local_user:remote_user@remote_fqdn"
+	# $ensure = "present", # TODO: implemented
+	$store_key = true,
 	$ssh_key_directory = "", # Local directory to store the private key. Defaults to home directory of the user, /home/user/.ssh or /root/.ssh.
 ){
 
@@ -12,6 +14,9 @@ define ssh_keys::connect (
 	# Set local variables
 
 	$puppetmaster_key_dir = $ssh_keys::params::puppetmaster_key_dir
+
+	$store_private_key = str2bool($store_key)
+	$update_private_key_value_each_run = $store_private_key # If private key is stored on Puppet Master, always rewrite value. Otherwise, only write on key creation.
 
 	$pieces = parse_sshkey_connection($title) # Parse $title into local_user:remote_user@remote_fqdn
 	if empty($pieces) {
@@ -51,7 +56,7 @@ define ssh_keys::connect (
 		owner => "${local_user}",
 		group => "${local_user}",
 		mode => "0600",
-		replace => false, # Do not overwrite content
+		replace => $update_private_key_value_each_run,
 		require => [
 			File["${key_dir}"],
 		],
