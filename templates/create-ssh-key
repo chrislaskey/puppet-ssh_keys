@@ -95,21 +95,6 @@ end
 
 # Execution
 
-# TODO: Deprecated
-# set_variables
-# verify_puppetmaster_environment
-# if has_already_run
-# 	return
-# end
-
-# generate_keys
-# move_public_key
-# change_public_key_user_and_hostname
-# move_private_key
-# private_key_content = return_private_key_content
-# remove_private_key
-
-
 set_variables
 verify_puppetmaster_environment
 if ! store_private_key and public_key_exists
