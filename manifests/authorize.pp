@@ -87,5 +87,4 @@ class ssh_keys::authorize () {
       File["${puppet_key_dir}/authorize-ssh-keys.sh"],
     ],
   }
-
 }

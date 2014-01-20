@@ -1,5 +1,5 @@
 name 'ssh_keys'
-version '2.1.0'
+version '2.2.0'
 author 'Chris Laskey'
 summary 'Automatically manage SSH keys in Puppet'
 description 'Automatically manage per-user key-based SSH connections between hosts.'
@@ -7,4 +7,5 @@ license 'MIT License (http://opensource.org/licenses/MIT)'
 project_page 'http://github.com/chrislaskey'
 
 dependency 'puppetlabs/stdlib', '>= 2.2.1'
+dependency 'puppetlabs/concat', '>= 1.0.0'
 dependency 'chrislaskey/ipaddresses', '>= 0.1.0'

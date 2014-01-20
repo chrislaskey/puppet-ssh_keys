@@ -1,0 +1,5 @@
+Host <%= target_user_and_fqdn_with_at %>
+    HostName <%= target_fqdn %>
+    User <%= target_user %>
+    IdentityFile <%= key_file %>
+

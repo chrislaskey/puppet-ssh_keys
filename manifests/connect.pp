@@ -9,6 +9,7 @@
 define ssh_keys::connect (
   $ensure            = 'present',
   $store_key         = true,
+  $manage_ssh_config = true,
   $ssh_key_directory = '',
 ){
 
@@ -42,11 +43,12 @@ define ssh_keys::connect (
     '${title}'.")
   }
 
-  $local_user           = $pieces['local_user']
-  $local_fqdn           = $::fqdn
-  $target_user          = $pieces['remote_user']
-  $target_fqdn          = $pieces['remote_fqdn']
-  $target_user_and_fqdn = "${target_user}@${target_fqdn}"
+  $local_user                   = $pieces['local_user']
+  $local_fqdn                   = $::fqdn
+  $target_user                  = $pieces['remote_user']
+  $target_fqdn                  = $pieces['remote_fqdn']
+  $target_user_and_fqdn         = "${target_user}@${target_fqdn}"
+  $target_user_and_fqdn_with_at = "${target_user}-at-${target_fqdn}"
 
   # Set local home directory
 
@@ -57,6 +59,8 @@ define ssh_keys::connect (
   } else {
     $key_dir = "/home/${local_user}/.ssh"
   }
+
+  $key_file = "${key_dir}/${target_user_and_fqdn}"
 
   # Create SSH keys
   # ==========================================================================
@@ -70,16 +74,14 @@ define ssh_keys::connect (
     }
   }
 
-  file { "${key_dir}/${target_user_and_fqdn}":
+  file { $key_file:
     ensure  => $ensure_private_key,
     content => template('ssh_keys/create-ssh-key'),
     owner   => $local_user,
     group   => $local_user,
     mode    => '0600',
     replace => $update_private_key_value_each_run,
-    require => [
-      File[$key_dir],
-    ],
+    require => File[$key_dir],
   }
 
   if $ensure_private_key == 'absent' {
@@ -88,9 +90,7 @@ define ssh_keys::connect (
       owner   => 'puppet',
       group   => 'puppet',
       mode    => '0600',
-      require => [
-        File["${key_dir}/${target_user_and_fqdn}"],
-      ],
+      require => File[$key_file],
     }
 
     file { $removed_key_file:
@@ -99,10 +99,42 @@ define ssh_keys::connect (
       owner   => 'puppet',
       group   => 'puppet',
       mode    => '0600',
-      require => [
-        File[$removed_keys_dir],
-      ],
+      require => File[$removed_keys_dir],
     }
   }
 
+  # Create SSH config fragments
+  # ==========================================================================
+
+  if $manage_ssh_config {
+
+    if ! defined(Concat["${key_dir}/config"]) {
+      concat { "${key_dir}/config":
+        owner          => $local_user,
+        group          => $local_user,
+        mode           => '0644',
+        warn           => true,
+        force          => true,
+        replace        => true,
+        ensure_newline => true,
+      }
+    }
+
+    concat::fragment { "ssh-config-fragment-${target_user_and_fqdn}":
+      target  => "${key_dir}/config",
+      content => template('ssh_keys/create-ssh-config-fragment'),
+    }
+
+  } else {
+
+    file { "${key_dir}/config-example-${target_user_and_fqdn}":
+      ensure  => 'present',
+      content => template('ssh_keys/create-ssh-config-fragment'),
+      owner   => $local_user,
+      group   => $local_user,
+      mode    => '0644',
+      require => File[$key_file],
+    }
+
+  }
 }
